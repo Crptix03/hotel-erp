@@ -1,0 +1,11 @@
+@HotelErp.api_HostAddress = http://localhost:5224
+
+GET {{HotelErp.api_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+GET {{HotelErp.api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

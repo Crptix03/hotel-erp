@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "/Vud7KecBP0=",
+  "dgSpecHash": "w3FJ06KUM00=",
   "success": true,
   "projectFilePath": "C:\\Users\\horen\\hotel-erp\\HotelErp.api\\HotelErp.api.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\horen\\.nuget\\packages\\bcrypt.net-next\\4.2.0\\bcrypt.net-next.4.2.0.nupkg.sha512",
     "C:\\Users\\horen\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\horen\\.nuget\\packages\\microsoft.aspnetcore.openapi\\11.0.0-rc.3.26522.148\\microsoft.aspnetcore.openapi.11.0.0-rc.3.26522.148.nupkg.sha512",
     "C:\\Users\\horen\\.nuget\\packages\\microsoft.build.framework\\18.0.2\\microsoft.build.framework.18.0.2.nupkg.sha512",

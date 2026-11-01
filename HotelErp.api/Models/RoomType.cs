@@ -14,4 +14,6 @@ public class RoomType
     public bool SmokingAllowed { get; set; }
     public decimal BaseRate { get; set; }
     public List<Room> Rooms { get; set; } = new();
+    public List<Amenity> Amenities { get; set; } = new();
+    public List<GuestIdDocument> IdDocuments { get; set; } = new();
 }

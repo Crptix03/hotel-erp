@@ -152,3 +152,103 @@ Authorization: Bearer {{token}}
 ### Try to delete property 1 (expect 409, it has rooms)
 DELETE {{host}}/api/properties/1
 Authorization: Bearer {{token}}
+
+### ===== RATE PLANS =====
+
+### List plans (expect Room Only with one rule, and Bed & Breakfast)
+GET {{host}}/api/rate-plans
+Authorization: Bearer {{token}}
+
+### Add a plan
+POST {{host}}/api/rate-plans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Half Board", "mealPlan": "HalfBoard", "price": 700, "validFrom": "2026-01-01", "validTo": "2030-12-31" }
+
+### Same name again (expect 409)
+POST {{host}}/api/rate-plans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Half Board", "mealPlan": "HalfBoard", "price": 700, "validFrom": "2026-01-01", "validTo": "2030-12-31" }
+
+### Dates the wrong way round (expect 400)
+POST {{host}}/api/rate-plans
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Broken", "mealPlan": "None", "price": 0, "validFrom": "2030-12-31", "validTo": "2026-01-01" }
+
+### Edit the plan (use the id from the add; 3 is likely)
+PUT {{host}}/api/rate-plans/3
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Half Board", "mealPlan": "HalfBoard", "price": 750, "validFrom": "2026-01-01", "validTo": "2030-12-31" }
+
+### ===== RATE RULES =====
+
+### Long-stay discount: 7+ nights, 10% off
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "LengthOfStay", "minNights": 7, "adjustmentType": "Percent", "adjustmentValue": -10 }
+
+### Weekend increase: 15% more
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Weekend", "minNights": 1, "adjustmentType": "Percent", "adjustmentValue": 15 }
+
+### Seasonal fixed extra: +200 per night in December
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Seasonal", "minNights": 1, "adjustmentType": "Fixed", "adjustmentValue": 200, "validFrom": "2026-12-01", "validTo": "2026-12-31" }
+
+### Percent too big (expect 400)
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "LengthOfStay", "minNights": 7, "adjustmentType": "Percent", "adjustmentValue": -150 }
+
+### Max nights smaller than min nights (expect 400)
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "LengthOfStay", "minNights": 7, "maxNights": 3, "adjustmentType": "Percent", "adjustmentValue": -5 }
+
+### Seasonal rule without dates (expect 400)
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Seasonal", "minNights": 1, "adjustmentType": "Fixed", "adjustmentValue": 100 }
+
+### Unknown rule type (expect 400)
+POST {{host}}/api/rate-plans/3/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Banana", "minNights": 1, "adjustmentType": "Percent", "adjustmentValue": 5 }
+
+### Edit a rule (use the id of the long-stay rule you added; 2 is likely): make it 14+ nights, 15% off
+PUT {{host}}/api/rate-plans/3/rules/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "LengthOfStay", "minNights": 14, "adjustmentType": "Percent", "adjustmentValue": -15 }
+
+### Delete that rule (expect 204)
+DELETE {{host}}/api/rate-plans/3/rules/2
+Authorization: Bearer {{token}}
+
+### Delete the Half Board plan (expect 204, its remaining rules go with it)
+DELETE {{host}}/api/rate-plans/3
+Authorization: Bearer {{token}}

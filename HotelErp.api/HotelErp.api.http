@@ -65,3 +65,90 @@ Content-Type: application/json
 ### Delete a room type
 DELETE {{host}}/api/room-types/4
 Authorization: Bearer {{token}}
+
+### ===== AMENITIES =====
+
+### Add an amenity (expect 200)
+POST {{host}}/api/amenities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Air conditioning", "category": "Room" }
+
+### Add it again (expect 409)
+POST {{host}}/api/amenities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Air conditioning", "category": "Room" }
+
+### Edit it (use the id from the first request)
+PUT {{host}}/api/amenities/5
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "Air conditioning", "category": "Comfort" }
+
+### Delete it (expect 204)
+DELETE {{host}}/api/amenities/5
+Authorization: Bearer {{token}}
+
+### ===== PROPERTIES =====
+
+### List properties (expect Gezana Demo Hotel with roomCount 8)
+GET {{host}}/api/properties
+Authorization: Bearer {{token}}
+
+### Add a property
+POST {{host}}/api/properties
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "code": "gdh2", "name": "Gezana Lakeside", "address": "Bishoftu, Ethiopia", "isActive": true }
+
+### ===== ROOMS =====
+
+### List all rooms
+GET {{host}}/api/rooms
+Authorization: Bearer {{token}}
+
+### Filter: property 1, status Clean
+GET {{host}}/api/rooms?propertyId=1&status=Clean
+Authorization: Bearer {{token}}
+
+### Filter: Deluxe rooms only (room type 2)
+GET {{host}}/api/rooms?roomTypeId=2
+Authorization: Bearer {{token}}
+
+### Count of rooms per status
+GET {{host}}/api/rooms/summary
+Authorization: Bearer {{token}}
+
+### Add a room
+POST {{host}}/api/rooms
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "propertyId": 1, "roomTypeId": 2, "roomNo": "204", "floor": 2 }
+
+### Mark a room Dirty (use the id of room 204 from the add above)
+PATCH {{host}}/api/rooms/9/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "Dirty" }
+
+### Try to set Occupied by hand (expect 400)
+PATCH {{host}}/api/rooms/9/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "Occupied" }
+
+### Delete the new room
+DELETE {{host}}/api/rooms/9
+Authorization: Bearer {{token}}
+
+### Try to delete property 1 (expect 409, it has rooms)
+DELETE {{host}}/api/properties/1
+Authorization: Bearer {{token}}

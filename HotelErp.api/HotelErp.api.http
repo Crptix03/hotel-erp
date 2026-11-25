@@ -1,10 +1,67 @@
 
-POST http://localhost:5224/api/auth/login
+@host = http://localhost:5224
+
+### 1. Login (send this first)
+# @name login
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 { "email": "manager@gezana.local", "password": "Manager@123" }
 
 ###
 
-GET http://localhost:5224/api/auth/me
-Authorization: Bearer PASTE_THE_TOKEN_HERE
+@token = {{login.response.body.$.token}}
+
+### List amenities (note the ids)
+GET {{host}}/api/amenities
+Authorization: Bearer {{token}}
+
+### List room types
+GET {{host}}/api/room-types
+Authorization: Bearer {{token}}
+
+### Get one room type
+GET {{host}}/api/room-types/1
+Authorization: Bearer {{token}}
+
+### Add a room type
+POST {{host}}/api/room-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Family",
+  "description": "Two connected rooms for families",
+  "bedType": "Twin",
+  "bedCount": 3,
+  "sizeSqm": 45,
+  "maxAdults": 4,
+  "maxChildren": 2,
+  "viewType": "Garden",
+  "smokingAllowed": false,
+  "baseRate": 4000,
+  "amenityIds": [1, 2, 3]
+}
+
+### Edit a room type (change the 4 to the id you got when adding)
+PUT {{host}}/api/room-types/4
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Family",
+  "description": "Two connected rooms for families, with a balcony",
+  "bedType": "Twin",
+  "bedCount": 3,
+  "sizeSqm": 48,
+  "maxAdults": 4,
+  "maxChildren": 2,
+  "viewType": "Garden",
+  "smokingAllowed": false,
+  "baseRate": 4500,
+  "amenityIds": [1, 2, 3, 4]
+}
+
+### Delete a room type
+DELETE {{host}}/api/room-types/4
+Authorization: Bearer {{token}}

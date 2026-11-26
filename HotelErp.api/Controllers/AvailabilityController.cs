@@ -61,7 +61,7 @@ public class AvailabilityController : ControllerBase
             .Where(i => blocking.Contains(i.Reservation.Status)
                      && i.Reservation.CheckInDate < checkOut
                      && checkIn < i.Reservation.CheckOutDate
-                     && (i.RoomId == null || i.Room!.PropertyId == propertyId))
+                     && i.Reservation.PropertyId == propertyId)
             .GroupBy(i => i.RoomTypeId)
             .Select(g => new { RoomTypeId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.RoomTypeId, x => x.Count);

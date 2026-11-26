@@ -518,3 +518,255 @@ Authorization: Bearer {{token}}
 ### Unknown room type (expect 404)
 GET {{host}}/api/availability/rooms?propertyId=1&roomTypeId=99&checkIn=2026-12-12&checkOut=2026-12-13
 Authorization: Bearer {{token}}
+
+### ===== RESERVATIONS =====
+
+### 1. Phone booking: 2 Standard (Room Only) + 1 Deluxe (Bed & Breakfast), 10 to 13 Mar 2027
+# @name createRes
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-10", "checkOut": "2027-03-13",
+  "items": [
+    { "roomTypeId": 1, "ratePlanId": 1, "quantity": 2 },
+    { "roomTypeId": 2, "ratePlanId": 2, "quantity": 1 }
+  ]
+}
+
+### 2. Read it back (expect 3 items, totalAmount 17400, status Confirmed, number like RES-2026-000001)
+GET {{host}}/api/reservations/{{createRes.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### 3. Availability for 10 to 11 Mar (expect Standard reserved 2 / available 2, Deluxe reserved 1 / available 2)
+GET {{host}}/api/availability?propertyId=1&checkIn=2027-03-10&checkOut=2027-03-11
+Authorization: Bearer {{token}}
+
+### 4. Book the last 2 Standard rooms for the same dates (expect 201)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Online",
+  "checkIn": "2027-03-10", "checkOut": "2027-03-13",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 2 } ]
+}
+
+### 5. One more Standard room (expect 409: Only 0 'Standard' room(s) available...)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-10", "checkOut": "2027-03-13",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 6. Back to back: a Standard room from 13 Mar (the others leave that morning). Expect 201
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-13", "checkOut": "2027-03-15",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 7. The only Suite, 10 to 13 Mar (expect 201, total 15000)
+# @name suite1
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-10", "checkOut": "2027-03-13",
+  "items": [ { "roomTypeId": 3, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 8. The Suite again (expect 409)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-11", "checkOut": "2027-03-12",
+  "items": [ { "roomTypeId": 3, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 9. Cancel the first Suite booking (expect 200, status Cancelled)
+POST {{host}}/api/reservations/{{suite1.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+
+### 10. Cancel it again (expect 409: A Cancelled reservation cannot be cancelled)
+POST {{host}}/api/reservations/{{suite1.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+
+### 11. The Suite is free again, so the same booking as test 8 now works (expect 201)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-11", "checkOut": "2027-03-12",
+  "items": [ { "roomTypeId": 3, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 12. A 7-night Suite stay gets the long-stay discount (expect nightlyRate 4500, total 31500)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-03-20", "checkOut": "2027-03-27",
+  "items": [ { "roomTypeId": 3, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### 13. Walk-in today: REPLACE both dates (today and tomorrow). Expect 201 with source WalkIn
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "WalkIn",
+  "checkIn": "2026-11-26", "checkOut": "2026-11-27",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### ----- Things that must be refused -----
+
+### Walk-in with a future date (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "WalkIn",
+  "checkIn": "2027-03-10", "checkOut": "2027-03-12",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### Check-in in the past (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2020-01-01", "checkOut": "2020-01-03",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### Unknown source (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Pigeon",
+  "checkIn": "2027-04-01", "checkOut": "2027-04-03",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### No items (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-04-01", "checkOut": "2027-04-03",
+  "items": []
+}
+
+### Quantity 0 (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-04-01", "checkOut": "2027-04-03",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 0 } ]
+}
+
+### Check-out before check-in (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-04-05", "checkOut": "2027-04-01",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### Rate plan not valid for these dates (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2031-04-01", "checkOut": "2031-04-03",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### Unknown guest (expect 404)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 999, "source": "Phone",
+  "checkIn": "2027-04-01", "checkOut": "2027-04-03",
+  "items": [ { "roomTypeId": 1, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### Unknown room type (expect 400)
+POST {{host}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "propertyId": 1, "guestId": 1, "source": "Phone",
+  "checkIn": "2027-04-01", "checkOut": "2027-04-03",
+  "items": [ { "roomTypeId": 99, "ratePlanId": 1, "quantity": 1 } ]
+}
+
+### ----- Searching -----
+
+### Everything for the hotel
+GET {{host}}/api/reservations?propertyId=1
+Authorization: Bearer {{token}}
+
+### Only cancelled (expect 1)
+GET {{host}}/api/reservations?status=cancelled
+Authorization: Bearer {{token}}
+
+### Unknown status (expect 400)
+GET {{host}}/api/reservations?status=banana
+Authorization: Bearer {{token}}
+
+### Search by number or guest name
+GET {{host}}/api/reservations?q=RES-2026
+Authorization: Bearer {{token}}
+
+### Arriving in March 2027
+GET {{host}}/api/reservations?arrivingFrom=2027-03-01&arrivingTo=2027-03-31
+Authorization: Bearer {{token}}
+
+### Paging: 2 per page
+GET {{host}}/api/reservations?page=1&pageSize=2
+Authorization: Bearer {{token}}
+
+### Not logged in (expect 401): note there is no Authorization line
+GET {{host}}/api/reservations

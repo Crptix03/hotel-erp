@@ -13,5 +13,6 @@ public class ReservationItem
     public RatePlan RatePlan { get; set; } = null!;
     public int Nights { get; set; }
     public decimal NightlyRate { get; set; }
+    public decimal Total { get; set; }
     public Stay? Stay { get; set; }
 }

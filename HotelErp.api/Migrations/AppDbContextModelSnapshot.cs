@@ -402,6 +402,9 @@ namespace HotelErp.api.Migrations
                     b.Property<int>("GuestId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ReservationNo")
                         .IsRequired()
                         .HasColumnType("text");
@@ -426,6 +429,8 @@ namespace HotelErp.api.Migrations
 
                     b.HasIndex("ReservationNo")
                         .IsUnique();
+
+                    b.HasIndex("PropertyId", "CheckInDate", "CheckOutDate");
 
                     b.ToTable("Reservations");
                 });
@@ -456,6 +461,10 @@ namespace HotelErp.api.Migrations
 
                     b.Property<int>("RoomTypeId")
                         .HasColumnType("integer");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.HasKey("Id");
 
@@ -626,7 +635,7 @@ namespace HotelErp.api.Migrations
             modelBuilder.Entity("HotelErp.Api.Models.GuestIdDocument", b =>
                 {
                     b.HasOne("HotelErp.Api.Models.Guest", "Guest")
-                        .WithMany()
+                        .WithMany("IdDocuments")
                         .HasForeignKey("GuestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -686,9 +695,17 @@ namespace HotelErp.api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HotelErp.Api.Models.Property", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("CreatedBy");
 
                     b.Navigation("Guest");
+
+                    b.Navigation("Property");
                 });
 
             modelBuilder.Entity("HotelErp.Api.Models.ReservationItem", b =>
@@ -765,6 +782,11 @@ namespace HotelErp.api.Migrations
             modelBuilder.Entity("HotelErp.Api.Models.Folio", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("HotelErp.Api.Models.Guest", b =>
+                {
+                    b.Navigation("IdDocuments");
                 });
 
             modelBuilder.Entity("HotelErp.Api.Models.Property", b =>

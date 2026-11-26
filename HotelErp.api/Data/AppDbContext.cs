@@ -46,5 +46,10 @@ public class AppDbContext : DbContext
         b.Entity<GuestIdDocument>().Property(x => x.IdType).HasConversion<string>();
         b.Entity<AppUser>().HasIndex(x => x.Email).IsUnique();
         b.Entity<GuestIdDocument>().HasIndex(d => new { d.IdType, d.IdNumber, d.IssuingCountry }).IsUnique();
+        b.Entity<ReservationItem>().Property(x => x.Total).HasPrecision(18, 2);
+        b.Entity<Reservation>().HasIndex(x => new { x.PropertyId, x.CheckInDate, x.CheckOutDate });
+        b.Entity<Reservation>()
+            .HasOne(r => r.Property).WithMany().HasForeignKey(r => r.PropertyId)
+            .OnDelete(DeleteBehavior.Restrict);   // deleting a hotel must never delete its bookings
     }
 }

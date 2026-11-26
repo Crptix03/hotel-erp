@@ -6,4 +6,5 @@ public class Guest
     public string FullName { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
     public string? Email { get; set; }
+    public List<GuestIdDocument> IdDocuments { get; set; } = new();
 }

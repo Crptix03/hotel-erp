@@ -45,5 +45,6 @@ public class AppDbContext : DbContext
         b.Entity<GuestRequest>().Property(x => x.RequestType).HasConversion<string>();
         b.Entity<GuestIdDocument>().Property(x => x.IdType).HasConversion<string>();
         b.Entity<AppUser>().HasIndex(x => x.Email).IsUnique();
+        b.Entity<GuestIdDocument>().HasIndex(d => new { d.IdType, d.IdNumber, d.IssuingCountry }).IsUnique();
     }
 }

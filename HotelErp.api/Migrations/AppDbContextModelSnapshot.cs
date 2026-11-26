@@ -223,6 +223,9 @@ namespace HotelErp.api.Migrations
 
                     b.HasIndex("VerifiedById");
 
+                    b.HasIndex("IdType", "IdNumber", "IssuingCountry")
+                        .IsUnique();
+
                     b.ToTable("GuestIdDocuments");
                 });
 

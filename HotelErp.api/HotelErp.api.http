@@ -252,3 +252,269 @@ Authorization: Bearer {{token}}
 ### Delete the Half Board plan (expect 204, its remaining rules go with it)
 DELETE {{host}}/api/rate-plans/3
 Authorization: Bearer {{token}}
+
+### ===== GUESTS =====
+
+### Add a guest (expect 201)
+POST {{host}}/api/guests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "Abebe Kebede", "phone": "+251911000111", "email": "abebe@example.com" }
+
+### Same guest again (expect 409)
+POST {{host}}/api/guests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "abebe kebede", "phone": "+251911000111" }
+
+### Bad email (expect 400)
+POST {{host}}/api/guests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "Test Guest", "phone": "+251911000222", "email": "not-an-email" }
+
+### Empty name (expect 400)
+POST {{host}}/api/guests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "", "phone": "+251911000333" }
+
+### Add a second guest, with no email
+POST {{host}}/api/guests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "Tigist Haile", "phone": "+251922000444" }
+
+### Search by name (expect Abebe only)
+GET {{host}}/api/guests?q=abebe
+Authorization: Bearer {{token}}
+
+### Search by phone
+GET {{host}}/api/guests?q=922
+Authorization: Bearer {{token}}
+
+### List all, 1 per page (expect items: 1, total: 2)
+GET {{host}}/api/guests?page=1&pageSize=1
+Authorization: Bearer {{token}}
+
+### Get one guest (use the id from your add; 1 is likely)
+GET {{host}}/api/guests/1
+Authorization: Bearer {{token}}
+
+### Edit the guest
+PUT {{host}}/api/guests/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "fullName": "Abebe Kebede", "phone": "+251911000111", "email": "abebe.kebede@example.com" }
+
+### ===== ID DOCUMENTS =====
+
+### Add a national ID (response shows a masked number)
+POST {{host}}/api/guests/1/id-documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idType": "NationalId", "idNumber": "ET1234567890", "issuingCountry": "Ethiopia", "expiryDate": "2032-05-01" }
+
+### Same ID again (expect 409)
+POST {{host}}/api/guests/2/id-documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idType": "NationalId", "idNumber": "ET1234567890", "issuingCountry": "Ethiopia" }
+
+### Unknown ID type (expect 400)
+POST {{host}}/api/guests/1/id-documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idType": "Library card", "idNumber": "L-001", "issuingCountry": "Ethiopia" }
+
+### Add an expired passport (saved, but isExpired is true)
+POST {{host}}/api/guests/1/id-documents
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idType": "Passport", "idNumber": "EP1234567", "issuingCountry": "Ethiopia", "expiryDate": "2020-01-01" }
+
+### Verify the national ID (use its id; 1 is likely): expect isVerified true, verifiedByName "Hotel Manager"
+POST {{host}}/api/guests/1/id-documents/1/verify
+Authorization: Bearer {{token}}
+
+### Verify the expired passport (expect 400)
+POST {{host}}/api/guests/1/id-documents/2/verify
+Authorization: Bearer {{token}}
+
+### Change the ID number: verification should be cancelled (isVerified false)
+PUT {{host}}/api/guests/1/id-documents/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idType": "NationalId", "idNumber": "ET1234567891", "issuingCountry": "Ethiopia", "expiryDate": "2032-05-01" }
+
+### The guest detail shows both documents with masked numbers
+GET {{host}}/api/guests/1
+Authorization: Bearer {{token}}
+
+### Delete the passport (expect 204)
+DELETE {{host}}/api/guests/1/id-documents/2
+Authorization: Bearer {{token}}
+
+### Delete the second guest (expect 204)
+DELETE {{host}}/api/guests/2
+Authorization: Bearer {{token}}
+
+### ===== RATE QUOTES =====
+
+### Standard + Room Only, 3 weekday nights (expect 1500 per night, total 4500)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### Standard + Bed & Breakfast, 3 nights (expect 1800 per night, total 5400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=2&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### Deluxe + Room Only, 6 nights (no long-stay discount: expect 2500 per night, total 15000)
+GET {{host}}/api/rates/quote?roomTypeId=2&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-07
+Authorization: Bearer {{token}}
+
+### Deluxe + Room Only, 7 nights (10% off: expect 2250 per night, total 15750)
+GET {{host}}/api/rates/quote?roomTypeId=2&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-08
+Authorization: Bearer {{token}}
+
+### Suite + Bed & Breakfast, 7 nights (that plan has no rules: 5300 per night, total 37100)
+GET {{host}}/api/rates/quote?roomTypeId=3&ratePlanId=2&checkIn=2026-12-01&checkOut=2026-12-08
+Authorization: Bearer {{token}}
+
+### Check-out before check-in (expect 400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-05&checkOut=2026-12-01
+Authorization: Bearer {{token}}
+
+### Same day (expect 400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-05&checkOut=2026-12-05
+Authorization: Bearer {{token}}
+
+### Missing dates (expect 400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1
+Authorization: Bearer {{token}}
+
+### Unknown room type (expect 404)
+GET {{host}}/api/rates/quote?roomTypeId=99&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### Outside the plan's valid dates (expect 400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2031-01-01&checkOut=2031-01-04
+Authorization: Bearer {{token}}
+
+### Longer than 365 nights (expect 400)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-01&checkOut=2028-01-01
+Authorization: Bearer {{token}}
+
+### ===== STACKING RULES (adds two temporary rules to Room Only) =====
+
+### Add a weekend rule: +15%
+# @name addWeekend
+POST {{host}}/api/rate-plans/1/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Weekend", "minNights": 1, "adjustmentType": "Percent", "adjustmentValue": 15 }
+
+### Add a seasonal rule: +200 per night in December 2026
+# @name addSeasonal
+POST {{host}}/api/rate-plans/1/rules
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ruleType": "Seasonal", "minNights": 1, "adjustmentType": "Fixed", "adjustmentValue": 200, "validFrom": "2026-12-01", "validTo": "2026-12-31" }
+
+### Standard + Room Only, 7 nights, 1 to 8 December: expect total 11255, average 1607.86
+### (weekday nights 1550, Friday and Saturday nights 1752.50; look at appliedRules in each night)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-08
+Authorization: Bearer {{token}}
+
+### Same plan, 6 nights, 1 to 7 December: expect total 10650, average 1775 (no long-stay discount)
+GET {{host}}/api/rates/quote?roomTypeId=1&ratePlanId=1&checkIn=2026-12-01&checkOut=2026-12-07
+Authorization: Bearer {{token}}
+
+### Clean up: delete the two test rules (expect 204 each)
+DELETE {{host}}/api/rate-plans/1/rules/{{addWeekend.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+###
+DELETE {{host}}/api/rate-plans/1/rules/{{addSeasonal.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### ===== AVAILABILITY =====
+
+### No bookings in these dates (expect Standard: total 4, reserved 0, available 4)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### 10 to 11 Dec: only TEST-001 overlaps (Standard: reserved 2, available 2)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-10&checkOut=2026-12-11
+Authorization: Bearer {{token}}
+
+### 12 to 13 Dec: TEST-001 and TEST-002 overlap (Standard: reserved 3, available 1)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-12&checkOut=2026-12-13
+Authorization: Bearer {{token}}
+
+### 13 to 14 Dec: TEST-001 checks out on the 13th, so only TEST-002 overlaps (reserved 1, available 3)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-13&checkOut=2026-12-14
+Authorization: Bearer {{token}}
+
+### 9 to 10 Dec: back to back with TEST-001, so no overlap (reserved 0, available 4)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-09&checkOut=2026-12-10
+Authorization: Bearer {{token}}
+
+### With prices, Room Only, 7 nights 1 to 8 Dec (expect Standard total 9450, Deluxe 15750, Suite 31500)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-08&ratePlanId=1
+Authorization: Bearer {{token}}
+
+### 3 adults: only the Suite fits (maxAdults 4)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-04&adults=3
+Authorization: Bearer {{token}}
+
+### 3 children: nothing fits (expect an empty roomTypes list)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-04&children=3
+Authorization: Bearer {{token}}
+
+### Zero adults (expect 400)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-04&adults=0
+Authorization: Bearer {{token}}
+
+### Wrong dates (expect 400)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-05&checkOut=2026-12-01
+Authorization: Bearer {{token}}
+
+### Missing dates (expect 400)
+GET {{host}}/api/availability?propertyId=1
+Authorization: Bearer {{token}}
+
+### Unknown property (expect 404 with a message)
+GET {{host}}/api/availability?propertyId=99&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### Unknown rate plan (expect 404 with a message)
+GET {{host}}/api/availability?propertyId=1&checkIn=2026-12-01&checkOut=2026-12-04&ratePlanId=99
+Authorization: Bearer {{token}}
+
+### ----- Free rooms -----
+
+### Standard rooms free 1 to 4 Dec (expect 101, 102, 103, 104)
+GET {{host}}/api/availability/rooms?propertyId=1&roomTypeId=1&checkIn=2026-12-01&checkOut=2026-12-04
+Authorization: Bearer {{token}}
+
+### Standard rooms free 12 to 13 Dec (expect 102, 103, 104: room 101 is taken by TEST-002)
+GET {{host}}/api/availability/rooms?propertyId=1&roomTypeId=1&checkIn=2026-12-12&checkOut=2026-12-13
+Authorization: Bearer {{token}}
+
+### Unknown room type (expect 404)
+GET {{host}}/api/availability/rooms?propertyId=1&roomTypeId=99&checkIn=2026-12-12&checkOut=2026-12-13
+Authorization: Bearer {{token}}

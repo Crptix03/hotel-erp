@@ -49,6 +49,7 @@ builder.Services.AddOpenApi(options =>
 });
 
 builder.Services.AddScoped<RateCalculator>(); builder.Services.AddScoped<RateCalculator>();
+builder.Services.AddScoped<CheckInService>();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

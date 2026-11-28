@@ -145,6 +145,12 @@ namespace HotelErp.api.Migrations
                     b.Property<string>("PaymentMethod")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("PostedById")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -152,6 +158,8 @@ namespace HotelErp.api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FolioId");
+
+                    b.HasIndex("PostedById");
 
                     b.ToTable("FolioLines");
                 });
@@ -629,7 +637,13 @@ namespace HotelErp.api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HotelErp.Api.Models.AppUser", "PostedBy")
+                        .WithMany()
+                        .HasForeignKey("PostedById");
+
                     b.Navigation("Folio");
+
+                    b.Navigation("PostedBy");
                 });
 
             modelBuilder.Entity("HotelErp.Api.Models.GuestIdDocument", b =>

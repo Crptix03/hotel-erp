@@ -1012,3 +1012,179 @@ Authorization: Bearer {{token}}
 ### 30. Rooms by status (expect Occupied 5, Clean 3)
 GET {{host}}/api/rooms/summary
 Authorization: Bearer {{token}}
+
+### ===== FOLIOS AND BILLING =====
+
+### Front desk login (send this first, it is used by two tests below)
+# @name login2
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "frontdesk@gezana.local", "password": "Front@123" }
+
+###
+@token2 = {{login2.response.body.$.token}}
+
+### 1. Find the stay in room 101
+# @name find101
+GET {{host}}/api/stays?propertyId=1&status=CheckedIn&q=101
+Authorization: Bearer {{token}}
+
+### 2. Its folio (expect status Open, ONE RoomCharge line of 3000, totalCharges 3000, totalPayments 0, balance 3000, isPaidInFull false)
+# @name folio101
+GET {{host}}/api/stays/{{find101.response.body.$.items[0].id}}/folio
+Authorization: Bearer {{token}}
+
+### 3. Laundry 250 (expect balance 3250, a ServiceCharge line posted by Hotel Manager)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/charges
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "description": "Laundry service", "amount": 250 }
+
+### 4. VAT on the laundry, type Tax (expect balance 3287.5)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/charges
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "description": "VAT on laundry", "amount": 37.50, "type": "Tax" }
+
+### 5. A deposit of 1000 in cash (expect balance 2287.5, totalPayments 1000, line type Payment, paymentMethod Cash)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 1000, "method": "Cash", "note": "Deposit at the front desk" }
+
+### 6. More than the amount due (expect 409: ...more than the amount due (2287.50))
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 3000, "method": "Cash" }
+
+### ----- Things that must be refused (400 each) -----
+
+### Payment of zero
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 0, "method": "Cash" }
+
+### Negative payment
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": -50, "method": "Cash" }
+
+### Unknown payment method
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 50, "method": "Seashells" }
+
+### Three decimal places
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 10.123, "method": "Cash" }
+
+### Charge with no description
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/charges
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "description": "", "amount": 100 }
+
+### Charge of zero
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/charges
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "description": "Minibar", "amount": 0 }
+
+### Charge with type Payment (not allowed on this endpoint)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/charges
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "description": "Sneaky", "amount": 100, "type": "Payment" }
+
+### ----- Adjustments (managers only) -----
+
+### Front desk tries an adjustment (expect 403)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/adjustments
+Authorization: Bearer {{token2}}
+Content-Type: application/json
+
+{ "reason": "Friendly discount", "amount": -100 }
+
+### 7. Manager gives a discount of 287.50 (expect balance 2000, an Adjustment line of -287.5)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "reason": "Goodwill discount for late check-in", "amount": -287.50 }
+
+### Adjustment that would make the balance negative (expect 409)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "reason": "Too generous", "amount": -5000 }
+
+### Adjustment of zero (expect 400)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "reason": "Nothing", "amount": 0 }
+
+### Adjustment with no reason (expect 400)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/adjustments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "reason": "", "amount": -10 }
+
+### ----- Paying the rest -----
+
+### 8. Front desk takes the rest, 2000 by mobile money (expect balance 0, isPaidInFull true, status still Open)
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token2}}
+Content-Type: application/json
+
+{ "amount": 2000, "method": "MobileMoney" }
+
+### Paying again (expect 409: ...more than the amount due (0.00))
+POST {{host}}/api/folios/{{folio101.response.body.$.id}}/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 1, "method": "Cash" }
+
+### 9. The full bill: 6 lines in order RoomCharge, ServiceCharge, Tax, Payment, Adjustment, Payment
+GET {{host}}/api/folios/{{folio101.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### 10. Everyone in the hotel (room 101 balance 0, room 102 still 3000)
+GET {{host}}/api/stays?propertyId=1&status=CheckedIn
+Authorization: Bearer {{token}}
+
+### Unknown folio, read (expect 404)
+GET {{host}}/api/folios/9999
+Authorization: Bearer {{token}}
+
+### Unknown folio, payment (expect 404)
+POST {{host}}/api/folios/9999/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "amount": 10, "method": "Cash" }
+
+### No token (expect 401): note there is no Authorization line
+GET {{host}}/api/folios/1

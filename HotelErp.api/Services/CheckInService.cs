@@ -164,8 +164,10 @@ public class CheckInService
             {
                 Type = FolioLineType.RoomCharge,
                 Description = $"Room {room.RoomNo} ({item.RoomType.Name}), {item.Nights} night(s), " +
-                              $"{reservation.CheckInDate:yyyy-MM-dd} to {reservation.CheckOutDate:yyyy-MM-dd}",
-                Amount = item.Total
+                  $"{reservation.CheckInDate:yyyy-MM-dd} to {reservation.CheckOutDate:yyyy-MM-dd}",
+                Amount = item.Total,
+                PostedAt = now,
+                PostedById = userId
             });
 
             _db.Stays.Add(stay);

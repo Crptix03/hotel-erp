@@ -9,4 +9,7 @@ public class FolioLine
     public string Description { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
+    public DateTime? PostedAt { get; set; }
+    public int? PostedById { get; set; }
+    public AppUser? PostedBy { get; set; }
 }
